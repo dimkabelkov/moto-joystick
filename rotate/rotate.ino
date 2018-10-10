@@ -1,4 +1,4 @@
-const int motorRotatePin[4] = {15, 2, 4, 16};
+const int motorRotatePin[4] = {2, 3, 4, 5};                      
 
 const bool motorRotatePosition[8][4] = {
   { 1, 0, 0, 0},
@@ -16,23 +16,23 @@ byte motorRotatePositionIndex = 0;
 int rotate = 0;
 int rotateNew = 0;
 
-int motor1Speed1 = 5; 
-int motor1Speed2 = 18;
-int motor1SpeedPwm = 23;
+int motor1Speed1 = 6; 
+int motor1Speed2 = 9; 
+int motor1SpeedPwm = 10;
 
 int speed = 0;
 int speedNew = 0;
 
-byte relayPin = 19;
+byte relayPin = 10;
 
 bool isRun = false;
 
 bool isDebug = false;
 
-const int freq = 30000;
-const int pwmChannel = 0;
-const int resolution = 8;
-int dutyCycle = 200;
+//const int freq = 30000;
+//const int pwmChannel = 0;
+//const int resolution = 8;
+//int dutyCycle = 200;
 
 int iterateSerial = 0;
 bool readSerial = false;
@@ -42,7 +42,7 @@ byte command[128];
 #include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
-RF24 radio(12, 14, 26, 25, 27);
+RF24 radio(7, 8);
 const uint64_t pipe = 0xE8E8F0F0E1LL;
 
 void setup()
@@ -59,9 +59,9 @@ void setup()
 
   pinMode(relayPin, OUTPUT);
 
-  ledcSetup(pwmChannel, freq, resolution);
+//  ledcSetup(pwmChannel, freq, resolution);
   
-  ledcAttachPin(motor1SpeedPwm, pwmChannel);
+  //ledcAttachPin(motor1SpeedPwm, pwmChannel);
 
   radio.begin();
   radio.setChannel(2);
@@ -108,7 +108,7 @@ void loop()
         }
 
         rotateNew = checkX;
-        speedNew = checkY;
+        speedNew = (checkY - 11) * 1.0078;
           
       } else if (rotateNew != 0 || speedNew != 0) {
         rotateNew = 0;
@@ -162,17 +162,19 @@ void speedHandler()
   if (abs(speedNew) < 15) {
     digitalWrite (motor1Speed1, LOW);
     digitalWrite (motor1Speed2, LOW); 
-    ledcWrite(pwmChannel, 0);
+    analogWrite(motor1SpeedPwm, 0);
   } else if (speed != speedNew) {
     speed = speedNew;
-    int speedMath = abs(speed) - 15;
-    if (speedMath > 490) {
-      speedMath = 490;
+    int speedMath = abs(speed/2/1.35) + 70;
+    
+    if (speedMath > 255) {
+      speedMath = 255;
     }
+
     if (isDebug) {
-      Serial.println("speed PWM: " + String(150 + speedMath / 4.7));
+      Serial.println("speed PWM: " + String(speedMath));
     }
-    ledcWrite(pwmChannel, 150 + speedMath / 4.7);
+    analogWrite(motor1SpeedPwm, speedMath);
     digitalWrite (motor1Speed1, speed > 0 ? HIGH : LOW);
     digitalWrite (motor1Speed2, speed > 0 ? LOW : HIGH);
   }
